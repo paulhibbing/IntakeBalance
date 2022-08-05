@@ -1,0 +1,15 @@
+Package: IntakeBalance
+Type: Package
+Title: Apply intake-balance methods
+Version: 0.1.0
+Authors@R: c(
+    person(c("Paul", "R."), "Hibbing", email = "paulhibbing@gmail.com",
+          role = c("aut","cre"))
+    )
+Description: Facilitates energy intake calculation using the
+    intake-balance method. Includes assistance for doing so
+    with research-grade wearables as the measure of energy
+    expenditure.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
