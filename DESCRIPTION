@@ -13,3 +13,12 @@ Description: Facilitates energy intake calculation using the
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    agcounts,
+    AGread,
+    magrittr,
+    PAutilities,
+    PhysActBedRest,
+    PhysicalActivity,
+    read.gt3x
+RoxygenNote: 7.1.2
