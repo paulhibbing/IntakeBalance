@@ -7,18 +7,26 @@ Authors@R: c(
           role = c("aut","cre"))
     )
 Description: Facilitates energy intake calculation using the
-    intake-balance method. Includes assistance for doing so
-    with research-grade wearables as the measure of energy
-    expenditure.
+    intake-balance method.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
     agcounts,
     AGread,
+    anthropometry,
+    dplyr,
     magrittr,
     PAutilities,
     PhysActBedRest,
     PhysicalActivity,
-    read.gt3x
+    read.gt3x,
+    rlang
 RoxygenNote: 7.1.2
+Remotes:
+    paulhibbing/anthropometry,
+    paulhibbing/accelEE,
+    paulhibbing/EE.Data
+Suggests: 
+    EE.Data,
+    accelEE

@@ -8,5 +8,6 @@
 
 # Imports -----------------------------------------------------------------
 
+  #' @importFrom rlang :=
   #' @import magrittr
   NULL
