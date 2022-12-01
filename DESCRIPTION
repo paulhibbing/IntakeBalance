@@ -12,15 +12,9 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    agcounts,
-    AGread,
     anthropometry,
     dplyr,
     magrittr,
-    PAutilities,
-    PhysActBedRest,
-    PhysicalActivity,
-    read.gt3x,
     rlang
 RoxygenNote: 7.1.2
 Remotes:
@@ -28,5 +22,9 @@ Remotes:
     paulhibbing/accelEE,
     paulhibbing/EE.Data
 Suggests: 
+    devtools,
     EE.Data,
-    accelEE
+    accelEE,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
