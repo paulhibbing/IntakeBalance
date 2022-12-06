@@ -1,4 +1,5 @@
 ---
+title: Using the `IntakeBalance` Package
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{IntakeBalance}
@@ -19,12 +20,12 @@ knitr::opts_chunk$set(
 for assessing energy intake (EI). In this vignette, we will demonstrate how to
 do this using an accelerometer-based approach.
 
-The goal is to make these tools and methods as accessible as possible. That
-said, we can currently only provide support for using them in R. We understand
-that most potential users are not R programmers, so we aim to provide thorough
-instructions that will demystify the process and limit how intimidating it
-feels. However, we realize things can always be clearer. If you find anything
-confusing, please feel free to point it out to us by
+We realize this might seem intimidating to most potential users, since few of us
+are R programmers. Although we can currently only provide support for using this
+tool in R, we want to make it as accessible as possible. The goal is for this
+page to provide thorough instructions that will demystify the process and limit
+how intimidating it feels. However, things can always be clearer. If you find
+anything confusing, please feel free to point it out to us by
 [filing an issue](https://github.com/paulhibbing/IntakeBalance/issues/new/choose),
 and we will do our best to make it clearer.
 
@@ -47,7 +48,6 @@ of R, so this longer approach helps us to [hopefully] account for that.) Just
 copy, paste, and execute all of the following code:
 
 ```{r, installation, eval=FALSE}
-
 ## List the required packages to install from mainstream R archive
 cran_packages <- c(
   "digest", "dplyr", "knitr", "lubridate", "magrittr",
@@ -86,7 +86,6 @@ invisible(lapply(
 
 if (!requireNamespace("AGread", quietly = TRUE))
   devtools::install_version("AGread", "1.3.2")
-
 ```
 
 Once you've finished the above, you're ready to look at an example of using the
@@ -99,18 +98,19 @@ The core of `IntakeBalance` is an eponymous function that simply calculates EI
 based on information about energy expenditure and changes in body composition.
 As shown below, the function runs in two ways depending on what information you
 supply. You can read more about this in the function documentation -- Just run
-`?IntakeBalance::IntakeBalance`.
+<br /> `?IntakeBalance::IntakeBalance`.
 
-Let's look at some imaginary data to show how this works.
+Let's look at some imaginary data to show both ways this can work.
 
-#### 1. The vector method
+#### Option 1. The vector method
 
 This is designed for making calculations when you're directly passing in data
 values for the requested pieces of information (i.e., "parameters" or
 "arguments"). It looks like this:
 
 ```{r, vector}
-IntakeBalance::IntakeBalance(
+## Generate the result
+vector_result <- IntakeBalance::IntakeBalance(
   fm_start = 50.5,   ## Fat mass at the start of the measurement period
   fm_end = 50.7,     ## Fat mass at the end of the measurement period
   ffm_start = 75.1,  ## Fat-free mass at the start of the measurement period
@@ -121,10 +121,14 @@ IntakeBalance::IntakeBalance(
   ee_units = "kcal", ## Units of measure for the resting energy expenditure value
   n_days = 14        ## Number of days between the start and end measurements
 )
+
+## Show the result
+knitr::kable(vector_result)
 ```
+
 This tells us that calculated energy intake was 2071 kcal/day.
 
-#### 2. The data frame method
+#### Option 2. The data frame method
 
 This is designed for making calculations when you have data for multiple
 individuals stored in a data frame. To show how it works, we first need to
@@ -133,23 +137,26 @@ create some imaginary data:
 ```{r, df}
 ## Create the data frame
 info <- data.frame(
+  PID = c("001", "002"),
   fm_start = c(50.5, 70.2), fm_end = c(50.7, 70.0),
   ffm_start = c(75.1, 90.3), ffm_end = c(74.9, 90.3),
   ee = c(1950, 2473), n_days = c(14, 14)
 )
 
 ## Show the data frame
-print(info)
+knitr::kable(info)
 ```
 
 Now let's calculate EI:
 
 ```{r, df2}
-IntakeBalance::IntakeBalance(
+## Generate the result
+df_result <- IntakeBalance::IntakeBalance(
   
   ## These arguments still refer to the same information outlined previously,
-  ## but now the values reflect the names of columns where that information is
-  ## stored, rather than passing in the values themselves
+  ## but now we have added a layer of abstraction to reference the names of
+  ## columns where that information is stored, rather than referencing the
+  ## values themselves
   fm_start = "fm_start",
   fm_end = "fm_end",
   ffm_start = "ffm_start",
@@ -158,11 +165,13 @@ IntakeBalance::IntakeBalance(
   n_days = "n_days",
   
   ## The trick is to pass in a data frame via this extra argument. That's how R
-  ## knows to interpret the other variables as column names rather than
-  ## expecting values to be passed in directly.
+  ## knows to interpret the other variables as column names rather than raw values
   df = info
   
 )
+
+## Show the result
+knitr::kable(df_result)
 ```
 
 You can see that this returns the original data frame, updated with new columns
@@ -178,9 +187,14 @@ package. But things get more powerful when we combine this with other packages
 to help with wrangling wearable data and incorporating it into the
 intake-balance method. Here, we will show how you could use the `accelEE`
 package to process an ActiGraph file using the same methods from our doubly
-labeled water study.
+labeled water study. Unfortunately, the code is designed for large files,
+whereas sample files tend to be quite small. So, throughout the code below, you
+will see some extra steps we need to take, just to make the example data set
+bigger so it plays nicely with the code. Things should be much simpler when you
+are working with real-world data. The process unfolds in two phases outlined
+below.
 
-#### 1. Reading and pre-formatting the wearable data
+#### Phase 1. Reading and pre-formatting the wearable data
 
 The first step is to read a "raw data" file (`gt3x` extension) into R. We'll use
 one that was built in with one of the packages we installed at the beginning. It
@@ -195,33 +209,35 @@ filename <- system.file(
   package = "read.gt3x"
 )
 
-## Read the file
+## Read the file using the `accelEE` package
 ex_data <- accelEE::ee_file(filename = filename, scheme = "Hibbing 2023")
 
-## Extend the data file for the sake of illustration (ignore these commands)
+## Extend the data file for the sake of illustration
+## (ignore these commands when processing real-world data)
 ex_data <- data.frame(
   Timestamp = ex_data$Timestamp[1] + (60*0:3199),
   do.call(rbind, replicate(80, ex_data[ ,-1], simplify = FALSE))
 )
 
 ## Show some of the contents
-head(dplyr::select(ex_data, !matches("features")))
+knitr::kable(head(dplyr::select(ex_data, !matches("features"))))
 
 ```
 
 So far, this gives us minute-by-minute summaries of accelerometer variables,
-plus estimates of energy expenditure for the different methods. Next, we need to
-account for non-wear and sleep. If you have a file with `agd` extension, you can
-use syntax just like the above to acquire that information. For example, you
-might run `agd_data <- accelEE::ee_file(filename = "myfolder/myfile.agd", scheme
-= "Hibbing 2023")`. R will recognize that it is an `agd` file and not a `gt3x`
-file, and it will then run the desired non-wear and sleep procedures instead of
-generating estimates of energy expenditure.
+plus estimates of energy expenditure (kcal/kg) for the different methods. Next,
+we need to account for non-wear and sleep. If you have a file with `agd`
+extension, you can use syntax just like the above to acquire that information.
+For example, you might run `agd_data <- accelEE::ee_file(filename =
+"myfolder/myfile.agd", scheme = "Hibbing 2023")`. R will recognize that it is an
+`agd` file and not a `gt3x` file, and it will then run the desired non-wear and
+sleep procedures instead of generating estimates of energy expenditure.
 
-For this example, though, we don't have a built in `agd` file. So instead, we'll
+For this example, though, we don't have a built in `agd` file. Instead, we'll
 just make up some activity count data. (You're welcome to run the below code if
-you're following along with this example, but in an actual application, you
-would use an `agd` file rather than completing this step.)
+you're following along with this example, but in an actual application, as
+described previously, you would use an `agd` file rather than completing this
+step.)
 
 ```{r, example2}
 
@@ -244,7 +260,8 @@ agd_data <- data.frame(
 )
 ```
 
-Then we can merge the two together and get a daily summary of EE:
+Once we have both energy expenditure (`.gt3x` origin) and sleep/non-wear (`.agd`
+origin) data, we can merge the two together and get a daily summary:
 
 ```{r, example3}
 
@@ -252,55 +269,113 @@ full_data <- merge(ex_data, agd_data)
 
 ee_data <- accelEE::ee_summary(full_data, scheme = "Hibbing 2023")
 
-print(ee_data)
+knitr::kable(ee_data)
 
 ```
 
-#### 2. Finishing the calculations
+#### Phase 2. Getting total daily energy expenditure from the wearable data
 
-The previous step gave us estimates of daily energy expenditure (kcal/kg) during
-awake wear time. From here, we need to bring in our body composition data and
-make a couple of calculations to determine EI. Almost there!
+The previous step gave us daily estimates of energy expenditure, relative to
+body mass (kcal/kg) and specifically during awake wear time. To calculate total
+(absolute) energy expenditure, we need to bring in our body composition data and
+make another calculation or two.
 
 ```{r, merge}
 
-## First, let's get our demographic data. We'll pretend it's the first row of
-## data from our previous data frame, and we'll assign it an ID label of `001`
-## and a body mass of 87 kg
+## First, let's get our body composition data. We'll pretend it's the first row
+## of the `info` data frame we created earlier. We'll remove the `ee` column to
+## avoid confusion, and we'll also assign an ID label of `001` and a body mass
+## of 87 kg
 
-  demographics <- info[1, ]
-  demographics$PID <- "001"
-  demographics$wt_kg <- 87
+  body_comp <- info[1, ]
+  body_comp$ee <- NULL
+  body_comp$wt_kg <- 87
 
+  
 ## Next, let's determine a Schofield prediction of basal metabolism to impute
 ## during periods of sleep/non-wear
 
-  demographics$schofield <- PAutilities::get_ree(
-    method = "schofield_wt_ht", sex = "M", age_yr = 25, wt_kg = 87,
-    ht_m = 1.85, output = "kcal_day", RER = 0.85
+  body_comp$schofield <- PAutilities::get_ree(
+    method = "schofield_wt_ht", sex = "M", age_yr = 55,
+    wt_kg = 87, ht_m = 1.85, output = "kcal_day"
   )
 
 
-## It's time to merge the demographic and energy expenditure data
+## It's time to merge the body composition and energy expenditure data
 
-  ei_data <- merge(demographics, ee_data)
+  ei_data <- merge(body_comp, ee_data)
   
 
-## Next, we account for non-wear/sleep time by adding Schofield estimates for
-## those periods. We'll use dplyr here as well
+## Next, we want to take our EE estimates (kcal/kg for awake wear periods) and
+## convert them to total EE (i.e., no longer relative to body weight, and
+## imputing basal metabolic expenditure for periods of sleep/non-wear).
+  
+## To do this, we'll use some functions from the `dplyr` package. Note that you
+## can interpret the `%>%` operator as meaning 'next do ____' or 'then do ___'.
+  
+## The `%<>%` operator is for assignment (i.e., saves
+## output to the `ei_data` object).
   
   suppressPackageStartupMessages(library(dplyr))
   
-  ei_data %>%
+  ei_data %<>%
     mutate(across(
       total_hildebrand_linear:total_staudenmayer_rf,
-      ~ .x * wt_kg + schofield * ((total_is_NonWear + total_is_Sleep) / 1440)
+      ~ .x * wt_kg + schofield * ((total_is_NonWear + total_is_Sleep) / 1440),
+      .names = "{gsub(\"^total\", \"EE\", .col)}"
     )) %>%
-    select(where(is.numeric)) %>%
-    group_by(PID = "001") %>%
-    summarise(across(where(is.numeric), mean, .names = "{gsub(\"^total\", \"mean\", .col)}"))
+    select(
+      any_of(names(body_comp)),
+      !Date,
+      !total_hildebrand_linear:total_staudenmayer_rf
+    ) %>%
+    group_by(across(any_of(names(body_comp)))) %>%
+    summarise(across(
+      everything(), mean, .names = "{gsub(\"^total\", \"mean\", .col)}"
+    ), .groups = "drop")
+
+  
+  knitr::kable(ei_data)
   
 
 ```
 
-We need to account for non-wear and sleep data by imputing basal metabolic rate estimates.
+#### Phase 3. Calculate energy intake
+
+At this point, we are ready for the rest of our calculations.
+
+```{r, IB}
+## Generate the result
+ei_result <-
+  ei_data %>%
+  mutate(across(
+    EE_hildebrand_linear:EE_staudenmayer_rf,
+    ~ IntakeBalance::IntakeBalance(
+      fm_start, fm_end, ffm_start, ffm_end, ee_per_day = .x
+    ),
+    .names = "{gsub(\"^EE\", \"EI\", .col)}"
+  ))
+
+## Show the result
+knitr::kable(ei_result)
+```
+
+Voila! The data frame now has new columns that specify energy intake estimates
+for each of the accelerometer-based methods.
+
+
+## Conclusion
+
+Hopefully this introduction to the `IntakeBalance` package gives you hope that
+it can be used in ways that are not too intimidating. Although there is a lot of
+code in the above examples (reflecting several steps you need to implement on
+your own), it is substantially less than the number of operations you would have
+to perform by hand to achieve the same outcome. With a little tweaking for your
+own project, our hope is that this could result in stronger analyses, better
+quality control, and eventually to saved time as you grow more familiar with
+using the tools. As noted previously, please
+[let us know if we can improve this vignette](https://github.com/paulhibbing/IntakeBalance/issues/new/choose)
+or anything else about `IntakeBalance` to make it more inviting and accessible.
+We believe that tools like these have a strong potential to advance science in
+the coming years, so we want to provide as much support as we can for increasing
+their uptake. Best wishes with using this tool in your future endeavors!
