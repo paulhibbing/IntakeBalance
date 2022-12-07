@@ -20,25 +20,28 @@ knitr::opts_chunk$set(
 for assessing energy intake (EI). In this vignette, we will demonstrate how to
 do this using an accelerometer-based approach.
 
-We realize this might seem intimidating to most potential users, since few of us
-are R programmers. Although we can currently only provide support for using this
-tool in R, we want to make it as accessible as possible. The goal is for this
-page to provide thorough instructions that will demystify the process and limit
-how intimidating it feels. However, things can always be clearer. If you find
-anything confusing, please feel free to point it out to us by
-[filing an issue](https://github.com/paulhibbing/IntakeBalance/issues/new/choose),
-and we will do our best to make it clearer.
+We realize this might seem like an intimidating tool, since most potential users
+are not R programmers. Although it's true that we can currently only provide
+support for using this tool in R, we want to make it as accessible as possible.
+On this page, our goal is to provide thorough instructions that will demystify
+the process and limit how intimidating it feels. But we also recognize there may
+be areas where things need to be clearer. If you find anything confusing, please
+feel free to
+[let us know by filing an issue](https://github.com/paulhibbing/IntakeBalance/issues/new/choose),
+and we will do our best to revise in a way that makes these instructions easier
+to follow.
 
 
 ## Prerequisites
 
 Before you can use `IntakeBalance`, you need to get your machine set up. The
-first step is to [install R](https://cran.r-project.org/). We also recommend
-[installing RStudio](https://posit.co/download/rstudio-desktop/). The default
-settings should do the trick, so you can just run the installers. Then open up
-RStudio and prepare to run some code in the console. (The bottom left pane. Code
-can be pasted in like it would in a document. Then press `[enter]` to execute
-the code.)
+first step is to [install R](https://cran.r-project.org/) if you haven't
+already. We also recommend [installing
+RStudio](https://posit.co/download/rstudio-desktop/). The default settings
+should do the trick, so you can just run the installers. Then open up RStudio
+and prepare to run some code in the console. (The bottom left pane. Code can be
+pasted in like it would in a document. Then press `[enter]` to execute the
+code.)
 
 The next task is to install the `IntakeBalance` package. This could be done much
 more concisely than what's shown in the code below, but we're going to go the
@@ -118,7 +121,7 @@ vector_result <- IntakeBalance::IntakeBalance(
   fm_units = "kg",   ## Units of measure for the fat mass value
   ffm_units = "kg",  ## Units of measure for the fat-free mass value
   ee_per_day = 1950, ## Daily energy expenditure
-  ee_units = "kcal", ## Units of measure for the resting energy expenditure value
+  ee_units = "kcal", ## Units of measure for the daily energy expenditure value
   n_days = 14        ## Number of days between the start and end measurements
 )
 
@@ -126,7 +129,7 @@ vector_result <- IntakeBalance::IntakeBalance(
 knitr::kable(vector_result)
 ```
 
-This tells us that calculated energy intake was 2071 kcal/day.
+This tells us that calculated EI was 2071 kcal/day.
 
 #### Option 2. The data frame method
 
@@ -155,7 +158,7 @@ df_result <- IntakeBalance::IntakeBalance(
   
   ## These arguments still refer to the same information outlined previously,
   ## but now we have added a layer of abstraction to reference the names of
-  ## columns where that information is stored, rather than referencing the
+  ## columns where that information is stored, rather than providing the
   ## values themselves
   fm_start = "fm_start",
   fm_end = "fm_end",
@@ -177,7 +180,7 @@ knitr::kable(df_result)
 You can see that this returns the original data frame, updated with new columns
 that indicate the change in energy storage (`delta_ES`) and the EI values.
 Furthermore, you can see that the values in the first row of `info` match with
-what was provided in the earlier example. Cool!
+what was provided in the example for Option 1. Cool!
 
 
 ## Making this Work with Data from Wearables
@@ -185,13 +188,19 @@ what was provided in the earlier example. Cool!
 The above examples demonstrated the core functionality of the `IntakeBalance`
 package. But things get more powerful when we combine this with other packages
 to help with wrangling wearable data and incorporating it into the
-intake-balance method. Here, we will show how you could use the `accelEE`
+intake-balance framework. Here, we will show how you could use the `accelEE`
 package to process an ActiGraph file using the same methods from our doubly
-labeled water study. Unfortunately, the code is designed for large files,
-whereas sample files tend to be quite small. So, throughout the code below, you
-will see some extra steps we need to take, just to make the example data set
-bigger so it plays nicely with the code. Things should be much simpler when you
-are working with real-world data. The process unfolds in two phases outlined
+labeled water study. Unfortunately, the code is designed for combining `gt3x`
+and `agd` files (raw acceleration and activity count formats, respectively) that
+each contain at least one full day of data. This is an issue because sample
+files tend to be small and only available in one format. So, throughout the code
+below, you will see some extra steps we need to take, just to create a large,
+properly-formatted, illustration-ready dataset that plays nicely with the code.
+Don't let this throw you off. We'll tell you whenever this these extraneous
+steps are happening, and you won't need to worry about them when dealing with
+your own data from the real world.
+
+The accelerometer-based intake-balance process unfolds in three phases outlined
 below.
 
 #### Phase 1. Reading and pre-formatting the wearable data
@@ -213,7 +222,7 @@ filename <- system.file(
 ex_data <- accelEE::ee_file(filename = filename, scheme = "Hibbing 2023")
 
 ## Extend the data file for the sake of illustration
-## (ignore these commands when processing real-world data)
+## (ignore this part when processing real-world data)
 ex_data <- data.frame(
   Timestamp = ex_data$Timestamp[1] + (60*0:3199),
   do.call(rbind, replicate(80, ex_data[ ,-1], simplify = FALSE))
@@ -260,8 +269,9 @@ agd_data <- data.frame(
 )
 ```
 
-Once we have both energy expenditure (`.gt3x` origin) and sleep/non-wear (`.agd`
-origin) data, we can merge the two together and get a daily summary:
+Once we have data related to both energy expenditure (`.gt3x` origin) and
+sleep/non-wear (`.agd` origin), we can merge the two together and get a daily
+summary:
 
 ```{r, example3}
 
@@ -275,10 +285,11 @@ knitr::kable(ee_data)
 
 #### Phase 2. Getting total daily energy expenditure from the wearable data
 
-The previous step gave us daily estimates of energy expenditure, relative to
-body mass (kcal/kg) and specifically during awake wear time. To calculate total
-(absolute) energy expenditure, we need to bring in our body composition data and
-make another calculation or two.
+The previous step gave us daily estimates of total energy expenditure, expressed
+relative to body mass (kcal/kg) and exclusively reflecting measurement during
+awake wear time. To calculate total (absolute) energy expenditure for the full
+day (including sleep/non-wear), we need to bring in our body composition data
+and make another calculation or two.
 
 ```{r, merge}
 
@@ -313,8 +324,7 @@ make another calculation or two.
 ## To do this, we'll use some functions from the `dplyr` package. Note that you
 ## can interpret the `%>%` operator as meaning 'next do ____' or 'then do ___'.
   
-## The `%<>%` operator is for assignment (i.e., saves
-## output to the `ei_data` object).
+## The `%<>%` operator is for assignment (i.e., saves output to the `ei_data` object).
   
   suppressPackageStartupMessages(library(dplyr))
   
@@ -326,8 +336,7 @@ make another calculation or two.
     )) %>%
     select(
       any_of(names(body_comp)),
-      !Date,
-      !total_hildebrand_linear:total_staudenmayer_rf
+      !c(Date, total_hildebrand_linear:total_staudenmayer_rf)
     ) %>%
     group_by(across(any_of(names(body_comp)))) %>%
     summarise(across(
@@ -336,11 +345,14 @@ make another calculation or two.
 
   
   knitr::kable(ei_data)
+  ## Note that the `n_days` column refers to the number of days between
+  ## body composition measurements, not necessarily the number of days of
+  ## accelerometer data included in the analysis (n = 2 in this case)
   
 
 ```
 
-#### Phase 3. Calculate energy intake
+#### Phase 3. Calculate EI
 
 At this point, we are ready for the rest of our calculations.
 
@@ -360,22 +372,24 @@ ei_result <-
 knitr::kable(ei_result)
 ```
 
-Voila! The data frame now has new columns that specify energy intake estimates
+Voila! The data frame now has new columns that specify EI estimates
 for each of the accelerometer-based methods.
 
 
 ## Conclusion
 
-Hopefully this introduction to the `IntakeBalance` package gives you hope that
-it can be used in ways that are not too intimidating. Although there is a lot of
-code in the above examples (reflecting several steps you need to implement on
-your own), it is substantially less than the number of operations you would have
-to perform by hand to achieve the same outcome. With a little tweaking for your
-own project, our hope is that this could result in stronger analyses, better
-quality control, and eventually to saved time as you grow more familiar with
-using the tools. As noted previously, please
+Hopefully this introduction to the `IntakeBalance` package makes it less
+intimidating and gets you on your way with implementing it in your own research.
+Although there is a lot of code in the above examples (reflecting several steps
+you need to implement on your own), it is substantially less than the number of
+operations you would have to perform by hand in order to achieve the same
+outcome. With a little tweaking for your own projects, our hope is that this
+could result in stronger analyses, better quality control, and eventually time
+saved as you grow more familiar with using this tool. As noted previously,
+please
 [let us know if we can improve this vignette](https://github.com/paulhibbing/IntakeBalance/issues/new/choose)
 or anything else about `IntakeBalance` to make it more inviting and accessible.
 We believe that tools like these have a strong potential to advance science in
 the coming years, so we want to provide as much support as we can for increasing
-their uptake. Best wishes with using this tool in your future endeavors!
+their uptake. Thanks for your interest, and we wish you the best with using
+`IntakeBalance`!
