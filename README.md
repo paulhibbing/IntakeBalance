@@ -20,4 +20,6 @@ devtools::install_github("paulhibbing/IntakeBalance")
 
 ## Vignette
 
-... Comming soon(ish, hopefully)
+See [paulhibbing.com/IntakeBalance](https://paulhibbing.com/IntakeBalance). The rest of the website
+is in hideous condition, especially for mobile users. So just ignore that, and laugh to yourself at
+Dr. Hibbing's ineptitude.
